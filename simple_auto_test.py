@@ -11,8 +11,7 @@ from infoblox.dns.dhcptypes import (Email_Address, Common_Dhcp_Props,
                                     Ms_Dhcp_Server)
 
 import infoblox.one.util as ut
-# some of init members are generated, but some of them are static
-# !!!! better solution - ONLY one call to set static
+
 class AutoTest(IBTestCase):
 
 
@@ -58,12 +57,6 @@ class AutoTest(IBTestCase):
 
         return obj
 
-    def has_attr_elems(self, key, member_list):
-        for attribute in member_list[key]:
-            if attribute == 'elements':
-                return True
-        return False
-
     def _gen_members(self, spec_hooks={}):
         member_list = self.class_name.members
         # variable for saving members, we are going to set (with all attributes)
@@ -78,7 +71,7 @@ class AutoTest(IBTestCase):
                 if key in self.common_skipped or\
                         key in self.memb_skipped:
                     continue
-                # check hooks
+
                 if key in self.member_hooks:
                     self.keys_to_assign[key] =\
                             self.member_hooks[key]
@@ -90,7 +83,6 @@ class AutoTest(IBTestCase):
                     self.values[key] = member_list[key]
                     continue
 
-                #check substructs
                 if key in self.class_name._substructs:
                     if self.class_name._substructs[key].dbtype\
                         in self.substr_skip:
@@ -101,28 +93,38 @@ class AutoTest(IBTestCase):
                     self.values[key] = member_list[key]
                     continue
 
+                skip_var = False
+
                 # add that to skip_vars!!!!!
                 # they dont have syntaxes attribute and some of them
                 # are a wrapper for substructs
                 # others after inserting into the
                 # db may change(dhcp_utilization_status)
+                for option in member_list[key]:
                 # for test !!!!!! skip all nested elems
-                # check fields with elems attribute
-                if self.has_attr_elems(key, member_list) == True:
-                    if member_list[key]['class'] != None and\
-                    type(member_list[key]['class']) != tuple:
-                        self.keys_to_assign[key] = \
-                            self._gen_substruct_list(
-                                member_list[key]['class'])[0]
-                    else:
-                        self.keys_to_assign[key] = \
-                                self._gen_obj_values(
-                                        key,
-                                        member_list[key]['type'],
-                                        values\
-                                        =member_list[key]['values'])
-                    self.values[key] = member_list[key]
+                    if option == 'elements':
+                        skip_var = True
+                        #if member_list[key]['type'] in self.types_to_gener:
+                        if member_list[key]['class'] != None and\
+                        type(member_list[key]['class']) != tuple:
+                            self.keys_to_assign[key] = \
+                                self._gen_substruct_list(
+                                    member_list[key]['class'])[0]
+                        else:
+                            self.keys_to_assign[key] = \
+                                    self._gen_obj_values(
+                                            key,
+                                            member_list[key]['type'],
+                                            values\
+                                            =member_list[key]['values'])
+                        self.values[key] = member_list[key]
+                        break
+                if skip_var == True:
+                    #if member_list[key]['type'] not in self.types_to_gener:
+                    #print key, member_list[key]['class'],\
+                    #        self.keys_to_assign[key]
                     continue
+
 
                 self.values[key] = member_list[key]
 
@@ -319,49 +321,36 @@ class AutoTest(IBTestCase):
             self._check_read([objs[0]], sf=searchfields)
 
             # search on comment field ? is this in all classes ?
-            # check fields with sorting
-            for key in self.search_fields:
-                sort_objs = []
-                check_field = objs[0][key].split(
-                        self.search_fields[key])[0]
-                searchfields = dict(
-                        {key:{
-                    'value': check_field,
-                    'search_type': 'REGEX' }})
-                sortfields = [{
-                    'field': keyword,
-                    'sort_type': 'ASC' }]
-                # very syntatic !!!
+            com_field = objs[0]['comment'].split()[0]
+            searchfields = dict(comment={
+                'value': com_field,
+                'search_type': 'REGEX' })
+            sortfields = [{
+                'field': keyword,
+                'sort_type': 'ASC' }]
+            # very syntatic !!!
+            if self.values[keyword]['syntaxes'][0] != 'ipv4_addr' or\
+                    self.values[keyword]['syntaxes'][0] != 'ip_addr' or\
+                    self.values[keyword]['syntaxes'][0] != 'ipv6_addr':
+                deco = [
+                ((ut.dotted_quad_to_num(a[keyword])),a) for a in objs]
 
-                for obj in objs:
-                    if obj[key].startswith(check_field):
-                        sort_objs.append(obj)
-                if self.has_attr_elems(
-                        keyword,
-                        self.class_name.members,
-                                    ) == False and\
-                     ( self.values[keyword]['syntaxes'][0] != 'ipv4_addr' or\
-                       self.values[keyword]['syntaxes'][0] != 'ip_addr' or\
-                       self.values[keyword]['syntaxes'][0] != 'ipv6_addr' ):
-                    deco = [
-                    ((ut.dotted_quad_to_num(a[keyword])),a) for a in sort_objs]
+            else:
+                deco = [( (a[keyword]),a ) for a in objs]
 
-                else:
-                    deco = [( (a[keyword]),a ) for a in sort_objs]
+            deco.sort()
+            sorted_objs = [obj for key, obj in deco]
+            #print sorted_objs
 
-                deco.sort()
-                sorted_objs = [obj for key, obj in deco]
-                print sorted_objs
-
-                self._check_read(sorted_objs,
-                        sf=searchfields,
-                        sortf=sortfields)
+            self._check_read(sorted_objs,
+                    sf=searchfields,
+                    sortf=sortfields)
             txn.abort()
 
 
 
     #all checks are performed in tansaction block
-    #special check if the substruct is get by other substruct-
+    #special check if the substruct is get by other substruct
     #self.substr_check - dict with tuple values
     def _check_substr_nested(self, substr_name):
         for key in self.substr_check:
@@ -391,11 +380,10 @@ class AutoTest(IBTestCase):
                 #print key, read_obj[key], obj[key], self.values[key]['type']
                 self.assertEqual(read_obj[key], obj[key])
 
-        print sf, sortf
+        #print sf, sortf
         n = 0
         for read_obj in reader.read(searchfields=sf,
                 sortfields=sortf):
-            print n
             #if len(sf) != 0 and len(sortf) != 0:
             #    print read_obj, '\n\n', objs[n]
             check_class(read_obj,objs[n])
@@ -437,13 +425,6 @@ class AutoTest(IBTestCase):
                 net_addr_int | (1 << (2**5 - cidr) - 2))
 
         return ut.num_to_dotted_quad(router_addr)
-
-    def gen_broadcast_addr(self, net_addr, cidr):
-        net_addr_int = ut.dotted_quad_to_num(net_addr)
-        reverse_mask = ~ut.dotted_quad_to_num(ut.cidr_to_mask(cidr))
-        broad_addr = ut.num_to_dotted_quad(net_addr_int | reverse_mask)
-        print net_addr, ut.num_to_dotted_quad(reverse_mask), broad_addr
-        return broad_addr
 
     def gen_net_addr_cidr(self, some_cidr=None):
         if some_cidr == None:
