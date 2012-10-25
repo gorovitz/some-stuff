@@ -91,14 +91,6 @@ class NetworkTest(sat.AutoTest, IBTestCase):
                     'options')
                 }
 
-        # used in read check
-        # key - member to search, value - character to split
-        self.search_fields ={
-                "comment": ' ',
-                "address": '.',
-                }
-
-
         #could be the same for class_field
         self.skip_substr_field = (
                 'position'
@@ -109,6 +101,7 @@ class NetworkTest(sat.AutoTest, IBTestCase):
         with self.db.begin(onedb.RW) as txn:
             for x in self.db.cursor('?dns.network'):
                 x.delete()
+            # ???? how to do better - depends on inserted zones
             for zone in NetworkTest.zones:
                 zone.delete()
 
