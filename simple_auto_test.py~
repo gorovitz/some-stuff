@@ -324,10 +324,12 @@ class AutoTest(IBTestCase):
                 sort_objs = []
                 check_field = objs[0][key].split(
                         self.search_fields[key])[0]
+                print check_field
                 searchfields = dict(
                         {key:{
                     'value': check_field,
                     'search_type': 'REGEX' }})
+                print searchfields
                 sortfields = [{
                     'field': keyword,
                     'sort_type': 'ASC' }]
@@ -336,6 +338,7 @@ class AutoTest(IBTestCase):
                 for obj in objs:
                     if obj[key].startswith(check_field):
                         sort_objs.append(obj)
+                print sort_objs[0]
                 if self.has_attr_elems(
                         keyword,
                         self.class_name.members,
