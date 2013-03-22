@@ -1,0 +1,11 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhist_cnt =9
+let g:netrw_dirhist_1='/home/maksim/Work/MAIN/products/dns/server/src/pyabs/test'
+let g:netrw_dirhist_2='/home/maksim/Work/MAIN/products/one/server/src/pyutil/testutils'
+let g:netrw_dirhist_3='/home/maksim/Work/MAIN/products/dns/server/src/pyabs/test'
+let g:netrw_dirhist_4='/home/maksim/Work/MAIN/products/one/server/src/pyutil/testutils'
+let g:netrw_dirhist_5='/home/maksim/Work/MAIN/products/one/server/src/pyutil/testutils/ibap'
+let g:netrw_dirhist_6='/home/maksim/Work/MAIN/products/one/server/src/pyutil/testutils'
+let g:netrw_dirhist_7='/home/maksim/Work/MAIN/products/dns/server/src/pyabs/test'
+let g:netrw_dirhist_8='/home/maksim/Work/NST_trunk/NST/trunk'
+let g:netrw_dirhist_9='/home/maksim/.vim/bundle/syntastic/syntax_checkers/html'
